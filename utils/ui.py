@@ -65,7 +65,8 @@ class BasicChat(BasicSession, BasicLLM):
             
         
         else:
-            self.container_options.info(f"{st.session_state.llm_modelname}")
+            
+            self.container_options.info(f"{st.session_state.llm_modelname} running on port : {st.session_state.llm_port} ")
         
         # affichage du contexte des conversations
         self.ui_context()

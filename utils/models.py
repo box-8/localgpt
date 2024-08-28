@@ -1,10 +1,10 @@
+import time
 import streamlit as st
 import os
 import socket
-import requests
 import subprocess
 import psutil
-import llama_cpp
+import time
 
 from utils.embeddings import * 
 from utils.session import BasicSession
@@ -84,10 +84,10 @@ class AppModels(BasicSession):
         files = os.listdir(models_directory)
         return [f for f in files if os.path.isfile(os.path.join(models_directory, f))]
 
-    def stop_service(self, port):
-        for proc in psutil.process_iter(['pid', 'connections']):
+    def stop_llm_service(self, port):
+        for proc in psutil.process_iter(['pid', 'net_connections']):
             try:
-                for conn in proc.connections():
+                for conn in proc.net_connections():
                     if conn.laddr.port == port:
                         proc.terminate()
                         return proc
@@ -104,13 +104,14 @@ class AppModels(BasicSession):
         model_path = os.path.join(models_directory, file)
         start_button = container.button(f"Démarrer le modèle sur {port_number}", key=file)
         if start_button:
-            self.start_llm_service(model_path=model_path,port=port_number)
+            is_started, message = self.start_llm_service(model_path=model_path,port=port_number)
+            st.write(message)
             self.set_llm_service(file, port_number)
             self.button_stop(container,port_number)    
     
     # génére le bouton pour arrêter un LLM 
     def button_stop(self, container,port_number):
-        test_stoped= container.button(f"Arrêter le modèle sur {port_number}", on_click=self.stop_service, args=(port_number,))
+        test_stoped= container.button(f"Arrêter le modèle sur {port_number}", on_click=self.stop_llm_service, args=(port_number,))
         if not test_stoped :
             pass
         elif test_stoped =="Not Stopped":
@@ -125,7 +126,7 @@ class AppModels(BasicSession):
         st.session_state.llm_port = port
     
     # démarre le LLM lorsque l'on clique sur le bouton
-    def start_llm_service(self,model_path, port):
+    def old_start_llm_service(self,model_path, port):
         # Commande à exécuter
         command = ["python", "-m", "llama_cpp.server", "--model", model_path, "--port", str(port)]
 
@@ -135,6 +136,41 @@ class AppModels(BasicSession):
         process = subprocess.Popen([venv_directory, "&&"] + command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
         # Attendre que le processus se ter mine et récupérer la sortie
         return True
+    
+    
+
+    def start_llm_service(self, model_path, port):
+        # Vérifier si le chemin du modèle existe
+        if not os.path.exists(model_path):
+            return False, f"Model path '{model_path}' does not exist."
+
+        # Commande sous forme de liste d'arguments
+        command = ["llama_cpp.server", "--model", model_path, "--port", str(port)]
+
+        try:
+            # Exécution de la commande sans shell=True
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            # Attendre un court délai pour que le serveur démarre
+            time.sleep(2)  # Attendre 2 secondes
+
+            # Vérifier si le processus est toujours en cours d'exécution
+            if process.poll() is None:
+                return True, "Service started successfully"
+            else:
+                # Lire et retourner l'erreur depuis stderr avec gestion de l'encodage
+                try:
+                    stderr_output = process.stderr.read().decode('utf-8')  # Tenter de décoder en UTF-8
+                except UnicodeDecodeError:
+                    stderr_output = process.stderr.read().decode('cp1252')  # Décoder en cp1252 si UTF-8 échoue
+                
+                return False, f"Service failed to start. Error: {stderr_output}"
+
+        except FileNotFoundError:
+            return False, "llama_cpp.server not found. Make sure it's installed and in your PATH."
+        except Exception as e:
+            return False, f"An unexpected error occurred: {str(e)}"
+
     
     # définit un numéro de port pour chaque modèle 
     def generate_port_number(self,file_name):
@@ -146,65 +182,7 @@ class AppModels(BasicSession):
 
     
     
-    # todo v1.2
-    # implémenter LLM cached local services
-    def cached_llm(self):
-        CACHED_LLM = []
-        files = self.list_models()
-        if not files:
-            st.write("Aucun fichier trouvé dans le répertoire 'models'")
-        else:
-            for file in files:
-                port_number = self.generate_port_number(file)
-                if st.session_state.llm_port == port_number:
-                    is_active = True
-                else : 
-                    is_active = False
-                if self.is_service_running(port_number):
-                    is_running = True
-                else:
-                    is_running = False
-                entry = {"name":os.path.basename(file), "port": port_number, "is_running": is_running, "is_active":is_active}
-                CACHED_LLM.append(entry)
-        return CACHED_LLM
     
-    
-    # todo v1.2
-    def models_dropdown(self,container=None):
-        options = list()
-        cachedllms = self.cached_llm()
-        idex = 0 
-        for index, models in enumerate(cachedllms):
-            name = models["name"]
-            port_number = models["port"]
-            if str(st.session_state.llm_port) == str(port_number):
-                idex = index
-            if models["is_running"] :
-                prefix = "👍"  
-            else:
-                prefix = "👎"
-                
-            if models["is_active"] :
-                prefix1 = "✔️" 
-            else:
-                prefix1 = " "
-            
-            entry = f"{prefix} {prefix1} : {name} :{port_number}"
-            options.append(entry)
-        
-        if not container : 
-            selected_entry = st.selectbox("llm model", options=options, index=idex)
-        else : 
-            selected_entry = container.selectbox("llm model", options=options, index=idex)
-        if selected_entry:
-            parts = selected_entry.split(':')
-            selected_port = int(parts[-1].strip())
-            selected_file = parts[-2].strip()
-            model_path = os.path.join(models_directory, selected_file)
-            st.session_state.llm_port = selected_port
-            if not self.is_service_running(selected_port) :
-                self.start_llm_service(model_path=model_path,port=selected_port)
-     
     
                 
                 
@@ -212,3 +190,67 @@ class AppModels(BasicSession):
 if __name__ == "__main__":
     App = AppModels()
     App.main()
+
+
+
+#############################################################################
+# todo v1.2
+# implémenter LLM cached local services
+#############################################################################
+    # def cached_llm(self):
+    #     CACHED_LLM = []
+    #     files = self.list_models()
+    #     if not files:
+    #         st.write("Aucun fichier trouvé dans le répertoire 'models'")
+    #     else:
+    #         for file in files:
+    #             port_number = self.generate_port_number(file)
+    #             if st.session_state.llm_port == port_number:
+    #                 is_active = True
+    #             else : 
+    #                 is_active = False
+    #             if self.is_service_running(port_number):
+    #                 is_running = True
+    #             else:
+    #                 is_running = False
+    #             entry = {"name":os.path.basename(file), "port": port_number, "is_running": is_running, "is_active":is_active}
+    #             CACHED_LLM.append(entry)
+    #     return CACHED_LLM
+    
+    
+    # # todo v1.2
+    # def models_dropdown(self,container=None):
+    #     options = list()
+    #     cachedllms = self.cached_llm()
+    #     idex = 0 
+    #     for index, models in enumerate(cachedllms):
+    #         name = models["name"]
+    #         port_number = models["port"]
+    #         if str(st.session_state.llm_port) == str(port_number):
+    #             idex = index
+    #         if models["is_running"] :
+    #             prefix = "👍"  
+    #         else:
+    #             prefix = "👎"
+                
+    #         if models["is_active"] :
+    #             prefix1 = "✔️" 
+    #         else:
+    #             prefix1 = " "
+            
+    #         entry = f"{prefix} {prefix1} : {name} :{port_number}"
+    #         options.append(entry)
+        
+    #     if not container : 
+    #         selected_entry = st.selectbox("llm model", options=options, index=idex)
+    #     else : 
+    #         selected_entry = container.selectbox("llm model", options=options, index=idex)
+    #     if selected_entry:
+    #         parts = selected_entry.split(':')
+    #         selected_port = int(parts[-1].strip())
+    #         selected_file = parts[-2].strip()
+    #         model_path = os.path.join(models_directory, selected_file)
+    #         st.session_state.llm_port = selected_port
+    #         if not self.is_service_running(selected_port) :
+    #             is_starteed, message = self.start_llm_service_n(model_path=model_path,port=selected_port)
+    #             st.write(message)
