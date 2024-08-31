@@ -108,11 +108,11 @@ class BasicChat(BasicSession, BasicLLM):
                 try:
                     response = st.write_stream(self.ask(user_query))
                 except:
-                    response = st.write_stream(self.getDebug("error connection to llm server"))
+                    response = st.write_stream(self.getDebug("Error connection to llm server"))
             st.session_state.history.append(AIMessage(content=response))
 
     # fonction générique pour poser une question au LLM actif 
-    def ask(self, query):
+    def ask(self, query) :
         if st.session_state.opt_debug :
             return self.getDebug()
         else:
