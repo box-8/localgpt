@@ -8,16 +8,38 @@ class AppVision(BasicChat):
     def __init__(self) -> None:
         # Initialisation de la classe de base et de l'API locale
         super()._init("Vision", "👀")
-        self.base_url = "http://localhost:1552/v1"  # Base URL pour le LLM local
-        # Point to the local server
-        self.llm = OpenAI(base_url=self.base_url, api_key="not-needed")
         
+        self.context = "Vous êtes un ingénieur en construction qui analyse des photos de chantier."
+        self.setOpenaAI()
+        self.llm_model_name = st.sidebar.radio(
+            "Choose Vision LLM",
+            ["gpt-4o-mini", "local-model"],
+            captions=[
+                "Opena IA Vision model, via system variable OPENAI_API_KEY",
+                "Local Phi 3-5 on port 1552. No API key",
+            ],
+        )
+
+        if self.llm_model_name == "gpt-4o-mini":
+            self.setOpenaAI()
+        else:
+            self.base_url = "http://localhost:1552/v1"  # Base URL pour le LLM local
+            self.llm = OpenAI(base_url=self.base_url, api_key="not-needed") # Point to the local server
+        st.write(f"You selected ({self.llm_model_name}) model.")
+            
+    def setOpenaAI(self):
+        self.base_url = "https://api.openai.com/v1/chat/completions"  # Base URL pour le LLM local
+        # Point to opena AI server
+        # assuming  opean ai is reading from local variables
+        self.llm = OpenAI()
     
     def main(self):
         # Interface utilisateur pour télécharger une image
+        
         self.uploaded_doc = st.file_uploader("Télécharger une image", type=["jpg", "png", "bmp", "jpeg"])
         if self.uploaded_doc is not None:
             # Si un fichier est uploadé, passer à la discussion
+            st.sidebar.image(self.uploaded_doc, caption="uploaded file")
             self.chat()
 
     
@@ -35,19 +57,16 @@ class AppVision(BasicChat):
         else:
             return "Veuillez télécharger une image avant de poser une question."
 
-    def get_response(self, query=""):
-        # Génération de la requête avec le modèle
-        if query =="":
-            return ""
-        try:
-            # Création du payload pour l'API LLM local
-                        
-            completion = self.llm.chat.completions.create(
-            model="local-model", # not used
+    
+    
+    
+    def completion(self, query=""):
+        return self.llm.chat.completions.create(
+            model=self.llm_model_name, # not used
             messages=[
                 {
                 "role": "system",
-                "content": "Vous êtes un ingénieur en construction qui analyse des photos de chantier.",
+                "content": self.context,
                 },
                 {
                 "role": "user",
@@ -63,10 +82,18 @@ class AppVision(BasicChat):
                 }
             ],
             max_tokens=1000,
-            stream=True
+            stream=True,
             )
-            #st.session_state.history.append(HumanMessage(content=user_query))
-            response = ""
+        
+    def get_response(self, query=""):
+        # Génération de la requête avec le modèle
+        if query =="":
+            return ""
+        try:
+            # Création du payload pour l'API LLM local
+                        
+            completion = self.completion()
+            
             for chunk in completion:
                 if chunk.choices[0].delta.content:
                     print(f"piece of response {chunk}")

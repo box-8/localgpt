@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from langchain_community.embeddings import HuggingFaceInstructEmbeddings
+from langchain_community.embeddings import HuggingFaceInstructEmbeddings, OpenAIEmbeddings
 
 ## INSTALL ##
 # data folder : where documents are uploaded 
@@ -35,7 +35,14 @@ def EMBEDDINGS():
     return APP_EMBEDDINGS
 
 
+@st.cache_resource
+def EMBEDDINGSOPENAI():
+    APP_EMBEDDINGS_OPENAI = OpenAIEmbeddings()
+    return APP_EMBEDDINGS_OPENAI
 
-
-
-
+# unsused 
+def set_embeddings(local=True):
+    if local:
+        return EMBEDDINGS()
+    else:
+        return EMBEDDINGSOPENAI()
