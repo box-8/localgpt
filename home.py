@@ -10,7 +10,7 @@ from langchain_community.document_loaders.pdf import PyMuPDFLoader
 
 from utils.models import AppModels
 from utils.embeddings import DATA_PATH, EMBEDDINGS
-from utils.ui import AppRag
+from utils.rag import AppRag
 
 
 class AppHome(AppRag):

@@ -9,7 +9,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from utils.ui import BasicChat
+from utils.chat import BasicChat
 
 
 class AppChat(BasicChat):

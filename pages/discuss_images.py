@@ -1,6 +1,6 @@
 import streamlit as st
 import base64
-from utils.ui import BasicChat
+from utils.chat import BasicChat
 from openai import OpenAI
 
 class AppVision(BasicChat):
