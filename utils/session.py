@@ -11,8 +11,8 @@ class BasicSession():
         self.session_register("opt_kfragments",default=3)
         self.session_register("selected_docs",default=[])
         
-        self.session_register("llm_modelname","") # init port, set to zero ! nor 1573
-        self.session_register("llm_port",0) # init port, set to zero ! nor 1573
+        self.session_register("llm_modelname","groq") # init port, set to zero ! nor 1573
+        self.session_register("llm_port","groq") # init port, set to zero ! nor 1573
         
     def no_llm_warn(self):
         if st.session_state.llm_modelname =="" or st.session_state.llm_port == 0 : 

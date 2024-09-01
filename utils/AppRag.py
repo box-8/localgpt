@@ -2,16 +2,12 @@ import streamlit as st
 import time
 import chromadb
 import pandas as pd
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
 from utils.embeddings import EMBEDDINGS
-from utils.session import BasicSession
-from utils.llm import BasicLLM
-from utils.models import AppModels
-from utils.chat import BasicChat
+from utils.BasicChat import BasicChat
 
 
 class AppRag(BasicChat):
@@ -25,7 +21,7 @@ class AppRag(BasicChat):
         self.collections = self.client.list_collections()  # obtenir la liste des collections
         self.noms_collections = [col.name for col in self.collections] # obtenir les noms des collections
         self.collectionName = self.noms_collections[0]
-        
+    
     
     def sidebar(self):
         # sidebar
@@ -45,6 +41,10 @@ class AppRag(BasicChat):
         self.docs_in_collection = self.list_documents(collectionName = self.collectionName)
         # defaults = self.documents_communs()
         
+        # ajout incompréhensible
+        if 'selected_docs' not in st.session_state:
+            st.session_state.selected_docs = []
+
         self.selected_docs = st.sidebar.multiselect("Choisissez les documents de la collection", self.docs_in_collection, key="selected_docs", default=st.session_state.selected_docs)
     
     def documents_communs(self, tab1, tab2):

@@ -1,6 +1,6 @@
 import streamlit as st
 import base64
-from utils.chat import BasicChat
+from utils.BasicChat import BasicChat
 from openai import OpenAI
 
 class AppVision(BasicChat):
@@ -61,6 +61,7 @@ class AppVision(BasicChat):
     
     
     def completion(self, query=""):
+        print(query)
         return self.llm.chat.completions.create(
             model=self.llm_model_name, # not used
             messages=[

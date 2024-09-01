@@ -1,16 +1,15 @@
 import streamlit as st
 import time
-import chromadb
-import pandas as pd
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+from langchain.prompts import ChatPromptTemplate
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders.pdf import PyMuPDFLoader 
 
 from utils.embeddings import EMBEDDINGS
 from utils.session import BasicSession
-from utils.llm import BasicLLM
-from utils.models import AppModels
+from utils.BasicLLM import BasicLLM
+
 
 class BasicChat(BasicSession, BasicLLM):
     def _init(self, title="", icon=""):
@@ -21,7 +20,33 @@ class BasicChat(BasicSession, BasicLLM):
         st.title(self.title + " "+ self.icon)
         
         self.llmLocal(st.session_state.llm_port) 
+    
+    
+    def vectoriser(self, file_path, collectionName="langchain"):
+        loader = PyMuPDFLoader(file_path=file_path)
+        documents = loader.load()
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+            #add_start_index=True,
+        )
+        chunks = text_splitter.split_documents(documents)
+        print(collectionName)
+        # Ajouter le nom de la collection aux métadonnées de chaque chunk
+        for chunk in chunks:
+            if hasattr(chunk, 'metadata'):
+                chunk.metadata['collectionName'] = collectionName
+            else:
+                chunk.metadata = {'collectionName': collectionName}
         
+        """
+        Vectorisation en cours
+        """
+        self.chroma_db.add_documents(documents=chunks)
+        st.success(f"Le document a été vectorisé avec succès à l'emplacement : {file_path}")
+        st.balloons()
+           
     def ui_context(self):
         opt_system_context = self.container_options.text_area("Contexte du Système :",key="opt_system_context", value=st.session_state.opt_system_context)
         if opt_system_context:

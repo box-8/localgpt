@@ -4,12 +4,8 @@
 
 # !pip install pypdf langchain langchain_openai 
 
-import streamlit as st
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_openai import ChatOpenAI
-from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from utils.chat import BasicChat
+
+from utils.BasicChat import BasicChat
 
 
 class AppChat(BasicChat):

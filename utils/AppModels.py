@@ -16,7 +16,6 @@ models_directory = os.path.abspath(os.path.join(script_directory, "..", "models"
 venv_directory = os.path.abspath(os.path.join(models_directory, "..", ".venv", "Scripts", "activate.bat")).replace("\\", "/")
 
 
-
 class AppModels(BasicSession):
     def __init__(self) -> None:
         self.session_init()
@@ -25,9 +24,6 @@ class AppModels(BasicSession):
     def ui_panel(self):
         st.markdown(f"## Gestion des modèles 🍀 {st.session_state.llm_modelname}")
         
-        
-        
-            
         # CACHED_LLM = []
         files = self.list_models()
         if not files:

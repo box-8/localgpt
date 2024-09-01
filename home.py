@@ -4,13 +4,12 @@ import chromadb
 import pandas as pd
 from chromadb.config import Settings
 
-from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter
-from langchain.vectorstores.chroma import Chroma
-from langchain_community.document_loaders.pdf import PyMuPDFLoader 
 
-from utils.models import AppModels
+from langchain.vectorstores.chroma import Chroma
+
+from utils.AppModels import AppModels
 from utils.embeddings import DATA_PATH, EMBEDDINGS
-from utils.rag import AppRag
+from utils.AppRag import AppRag
 
 
 class AppHome(AppRag):
@@ -175,22 +174,7 @@ class AppHome(AppRag):
             for index, value in selected_row.items():
                 st.write(f"{index}: {value}")
                 
-    def vectoriser(self, file_path, collectionName="langchain"):
-        loader = PyMuPDFLoader(file_path=file_path)
-        documents = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
-            #add_start_index=True,
-        )
-        chunks = text_splitter.split_documents(documents)
-        """
-        Vectorisation en cours
-        """
-        self.chroma_db.add_documents(documents=chunks)
-        st.success(f"Le document a été vectorisé avec succès à l'emplacement : {file_path}")
-        st.balloons()
+    
 
 
 
