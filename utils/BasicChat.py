@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import time
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -22,6 +23,15 @@ class BasicChat(BasicSession, BasicLLM):
         self.llmLocal(st.session_state.llm_port) 
     
     
+    
+    # créer un attribut dans le chunck ou le met à jour
+    def set_attr(self,chunk, attrName, attrValue):
+        if hasattr(chunk, 'metadata'):
+            chunk.metadata[attrName] = attrValue
+        else:
+            chunk.metadata = {attrName: attrValue}
+            
+    # vectorise un document
     def vectoriser(self, file_path, collectionName="langchain"):
         loader = PyMuPDFLoader(file_path=file_path)
         documents = loader.load()
@@ -35,11 +45,15 @@ class BasicChat(BasicSession, BasicLLM):
         print(collectionName)
         # Ajouter le nom de la collection aux métadonnées de chaque chunk
         for chunk in chunks:
-            if hasattr(chunk, 'metadata'):
-                chunk.metadata['collectionName'] = collectionName
-            else:
-                chunk.metadata = {'collectionName': collectionName}
-        
+            self.set_attr(chunk=chunk, attrName="collectionName",attrValue=collectionName)
+            self.set_attr(chunk=chunk, attrName="filename",attrValue=os.path.basename(file_path)
+)
+            # if hasattr(chunk, 'metadata'):
+            #     chunk.metadata['collectionName'] = collectionName
+            # else:
+            #     chunk.metadata = {'collectionName': collectionName}
+
+            os.path.basename(file_path)
         """
         Vectorisation en cours
         """

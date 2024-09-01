@@ -12,13 +12,24 @@ from utils.AppRag import AppRag
 
 
 class AppOfferAnalysis(AppRag):
-    def document_exists(self, collection_name, file_path):
-        # Fonction pour vérifier si le document est déjà dans la collection
-        collection = self.chroma_db.get_collection(collection_name)
-        query_results = collection.query(where={"file_path": file_path})
 
-        # Si des résultats sont trouvés, cela signifie que le document existe déjà
-        return len(query_results['documents']) > 0
+    def std_uploader(self, selfDoc,filename, key):
+        
+        file_rename=f"{self.collectionName}_{filename}"
+        file_rename_path = os.path.join(DATA_PATH, file_rename)
+    
+        if os.path.exists(file_rename_path):
+            st.write("popo")
+            button = st.button(f"voir {file_rename_path}",key=file_rename)
+            if button: 
+                os.startfile(file_rename_path)
+        else:
+            
+            # print(f"Le fichier {file_rename} n'existe pas.")
+            selfDoc = st.file_uploader(label="", accept_multiple_files=False, key=key)
+            saved_path = self.save_uploaded_doc(uploaded_file=selfDoc, file_rename=file_rename )
+            self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
+
 
     def run_app(self) :
         self.CCTP = None
@@ -27,41 +38,22 @@ class AppOfferAnalysis(AppRag):
         self.Offre3 = None
         super().sidebar()
         tab1, tab2, tab3, tab4 = st.tabs(["CCTP", "Offres", "Analyse", "Options"])
-        
+
         with tab1:
             st.header(f"Cahier des charges {self.collectionName}")
-            st.write("télécharger le cahier des charges")
-            self.CCTP = st.file_uploader(label="choisir le fichier", accept_multiple_files=False)
-            if self.CCTP is not None:
-                filename = self.CCTP.name.lower()
-                saved_path = self.save_uploaded_doc(self.CCTP, file_name = filename)
-                self.vectoriser(file_path=saved_path, collectionName="")
             
+            self.std_uploader(selfDoc = self.CCTP, filename="CCTP.pdf", key="cctp")
+            st.write("télécharger le cahier des charges")
         with tab2:
             st.header(f"Dossier Offres")
             colf1, colf2, colf3 = st.columns(3)
             with colf1:
-                
-                
-                
-                self.Offre1 = st.file_uploader(label="choisir l'offre 1", accept_multiple_files=False)
-                if self.Offre1 is not None:
-                    filename1 = self.Offre1.name.lower()
-                    saved_path = self.save_uploaded_doc(self.Offre1, file_name = filename1)
-                    self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
+                self.std_uploader(selfDoc =self.Offre1, filename="Offre1.pdf", key="offre1")
             with colf2:
-                self.Offre2 = st.file_uploader(label="choisir l'offre 2", accept_multiple_files=False)
-                if self.Offre2 is not None:
-                    filename2 = self.Offre2.name.lower()
-                    saved_path = self.save_uploaded_doc(self.Offre2, file_name = filename2)
-                    self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
+                self.std_uploader(selfDoc =self.Offre2, filename="Offre2.pdf", key="offre2")
             with colf3:
-                self.Offre3 = st.file_uploader(label="choisir l'offre 3", accept_multiple_files=False)
-                if self.Offre3 is not None:
-                    filename3 = self.Offre3.name.lower()
-                    saved_path = self.save_uploaded_doc(self.Offre3, file_name = filename3)
-                    self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
-        
+                self.std_uploader(selfDoc =self.Offre3, filename="Offre3.pdf", key="offre3")
+
         with tab3:
             # Liste des fichiers du répertoire "data"
             st.header(f"Fichiers sur le disque")
@@ -76,7 +68,7 @@ class AppOfferAnalysis(AppRag):
                 selected_data_path = os.path.join(DATA_PATH, selected_file)
                 if selected_file.endswith('.jpg'):
                     st.image(selected_data_path, caption=selected_file, use_column_width=True)
-            
+
             col1, col2, col3 = st.columns(3)
 
             with col1:
@@ -87,7 +79,7 @@ class AppOfferAnalysis(AppRag):
 
             with col3:
                 button3 = st.button('Vectoriser')
-                
+
             if button1:
                 if selected_file:
                     os.remove(selected_data_path)
@@ -101,19 +93,6 @@ class AppOfferAnalysis(AppRag):
         with tab4:
             models = AppModels()
             models.ui_panel()
-       
-        
-        
-    
-    
-    # sauvegarde un fichier avec le nom spécifié
-    def save_uploaded_doc(self, uploaded_file, file_name):
-        with open(os.path.join(DATA_PATH, file_name), "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        return os.path.join(DATA_PATH, file_name)
-    
-
-
 
     def delete_document(collectionName, documentName, client):
         collection = client.get_or_create_collection(name=collectionName)
@@ -123,7 +102,7 @@ class AppOfferAnalysis(AppRag):
             metadatas = row['metadatas']
             if documentName in metadatas["file_path"]:
                 filtered_ids.add(row['ids'])
-        
+
         chroma_db = Chroma(
             client=client,
             collection_name=collectionName,
@@ -143,21 +122,21 @@ class AppOfferAnalysis(AppRag):
         # st.session_state.collection = self.noms_collections[0]
         "collection created"
         return collection
-    
+
     def rename_collection(self, name):
         if name =="":
             return
         else :
             collection = self.client.get_or_create_collection(name=st.session_state.collection)
             collection.modify(name)
-        
+
     def delete_collection(self,name):
         collection = self.client.delete_collection(name=name)
         self.init_collections()
         "collection supprimée"
         return collection
-    
-    
+
+
 if __name__ == "__main__":
     app = AppOfferAnalysis("Rapport d'Analyse d'offres","💵")
     app.run_app()

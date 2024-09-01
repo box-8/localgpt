@@ -1,12 +1,13 @@
 import streamlit as st
 import time
+import os
 import chromadb
 import pandas as pd
 from langchain.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
 
-from utils.embeddings import EMBEDDINGS
+from utils.embeddings import DATA_PATH, EMBEDDINGS
 from utils.BasicChat import BasicChat
 
 
@@ -22,6 +23,23 @@ class AppRag(BasicChat):
         self.noms_collections = [col.name for col in self.collections] # obtenir les noms des collections
         self.collectionName = self.noms_collections[0]
     
+    def is_document_vectorized(self, file_name):
+        # Fonction pour vérifier si le document est déjà dans la collection
+        collection = self.client.get_collection(self.collectionName)
+        query_results = collection.query(where={"filename": file_name})
+
+        # Si des résultats sont trouvés, cela signifie que le document existe déjà
+        if len(query_results['documents']) > 0:
+            return True
+        else:
+            return False
+        
+        
+    def save_uploaded_doc(self, uploaded_file, file_rename=""):
+        # Sauvegarder l'image téléchargée sur le disque
+        with open(os.path.join(DATA_PATH, file_rename), "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        return os.path.join(DATA_PATH, file_rename)
     
     def sidebar(self):
         # sidebar

@@ -60,7 +60,7 @@ class AppHome(AppRag):
             with colf1:
                 uploaded_doc = st.file_uploader("🚩 Ajouter un document dans " + self.collectionName, type=["pdf", "txt", "docx", "jpg"])
                 if uploaded_doc is not None:
-                    saved_path = self.save_uploaded_doc(uploaded_doc)
+                    saved_path = self.save_uploaded_doc(uploaded_doc, file_rename= uploaded_doc.name.lower())
                     if st.button("Vectoriser le doc"):
                         self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
             with colf2:
@@ -150,13 +150,7 @@ class AppHome(AppRag):
                 collection_selectionnee.delete(ids=id_element_a_supprimer)
                 st.write(f"L'élément {id_element_a_supprimer} a été supprimé.")
 
-    def save_uploaded_doc(self, uploaded_file):
-        # Sauvegarder l'image téléchargée sur le disque
-        file_name = uploaded_file.name.lower()
-        
-        with open(os.path.join(DATA_PATH, file_name), "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        return os.path.join(DATA_PATH, file_name)
+    
 
         
     def visualiser(self,collection):
