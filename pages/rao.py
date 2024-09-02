@@ -1,11 +1,7 @@
 import os
 import streamlit as st
 import pandas as pd
-
-
 from langchain.vectorstores.chroma import Chroma
-
-
 from utils.AppModels import AppModels
 from utils.embeddings import DATA_PATH, EMBEDDINGS
 from utils.AppRag import AppRag
@@ -13,23 +9,34 @@ from utils.AppRag import AppRag
 
 class AppOfferAnalysis(AppRag):
 
-    def std_uploader(self, selfDoc,filename, key):
+    def std_uploader(self, selfDoc, filename, key):
         
         file_rename=f"{self.collectionName}_{filename}"
         file_rename_path = os.path.join(DATA_PATH, file_rename)
-    
+        st.write(key.upper() )
+        
+        
         if os.path.exists(file_rename_path):
-            st.write("popo")
-            button = st.button(f"voir {file_rename_path}",key=file_rename)
+            button = st.button(f"voir",key=file_rename)
             if button: 
                 os.startfile(file_rename_path)
+            
+            button1 = st.button(f"supprimer ",key="delete_"+file_rename)
+            if button1: 
+                os.remove(file_rename_path)
+                st.sidebar.success(f"Le document {file_rename} a été supprimée avec succès.")
+                selfDoc = None
+                st.experimental_rerun()
+                
         else:
             
-            # print(f"Le fichier {file_rename} n'existe pas.")
-            selfDoc = st.file_uploader(label="", accept_multiple_files=False, key=key)
-            saved_path = self.save_uploaded_doc(uploaded_file=selfDoc, file_rename=file_rename )
-            self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
-
+            selfDoc = st.file_uploader(label="uploader le fichier", accept_multiple_files=False, key=key)
+            if selfDoc is not None :
+                saved_path = self.save_uploaded_doc(uploaded_file=selfDoc, file_rename=file_rename )
+                self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
+                st.balloons()
+                st.experimental_rerun()
+        
 
     def run_app(self) :
         self.CCTP = None
@@ -40,19 +47,18 @@ class AppOfferAnalysis(AppRag):
         tab1, tab2, tab3, tab4 = st.tabs(["CCTP", "Offres", "Analyse", "Options"])
 
         with tab1:
-            st.header(f"Cahier des charges {self.collectionName}")
+            st.header(f"Cahier des charges #{self.collectionName}#")
+            self.std_uploader(selfDoc=self.CCTP, filename="CCTP.pdf", key="cctp")
             
-            self.std_uploader(selfDoc = self.CCTP, filename="CCTP.pdf", key="cctp")
-            st.write("télécharger le cahier des charges")
         with tab2:
             st.header(f"Dossier Offres")
             colf1, colf2, colf3 = st.columns(3)
             with colf1:
-                self.std_uploader(selfDoc =self.Offre1, filename="Offre1.pdf", key="offre1")
+                self.std_uploader(selfDoc=self.Offre1, filename="Offre1.pdf", key="offre1")
             with colf2:
-                self.std_uploader(selfDoc =self.Offre2, filename="Offre2.pdf", key="offre2")
+                self.std_uploader(selfDoc=self.Offre2,  filename="Offre2.pdf", key="offre2")
             with colf3:
-                self.std_uploader(selfDoc =self.Offre3, filename="Offre3.pdf", key="offre3")
+                self.std_uploader(selfDoc=self.Offre3,  filename="Offre3.pdf", key="offre3")
 
         with tab3:
             # Liste des fichiers du répertoire "data"
@@ -138,5 +144,5 @@ class AppOfferAnalysis(AppRag):
 
 
 if __name__ == "__main__":
-    app = AppOfferAnalysis("Rapport d'Analyse d'offres","💵")
+    app = AppOfferAnalysis("Rapport d'Analyse","💵")
     app.run_app()

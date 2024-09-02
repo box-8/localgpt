@@ -8,7 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders.pdf import PyMuPDFLoader 
 
 from utils.embeddings import EMBEDDINGS
-from utils.session import BasicSession
+from utils.BasicSession import BasicSession
 from utils.BasicLLM import BasicLLM
 
 
@@ -58,8 +58,9 @@ class BasicChat(BasicSession, BasicLLM):
         Vectorisation en cours
         """
         self.chroma_db.add_documents(documents=chunks)
-        st.success(f"Le document a été vectorisé avec succès à l'emplacement : {file_path}")
+        st.sidebar.warning(f"Le document a été vectorisé avec succès à l'emplacement : {file_path}")
         st.balloons()
+        st.experimental_rerun()
            
     def ui_context(self):
         opt_system_context = self.container_options.text_area("Contexte du Système :",key="opt_system_context", value=st.session_state.opt_system_context)

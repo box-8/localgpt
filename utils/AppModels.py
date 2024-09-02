@@ -7,7 +7,7 @@ import psutil
 import time
 
 from utils.embeddings import * 
-from utils.session import BasicSession
+from utils.BasicSession import BasicSession
 
 script_directory = os.path.abspath(os.path.dirname(__file__))
 # Chemin absolu vers le répertoire "models"

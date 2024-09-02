@@ -30,23 +30,27 @@ class AppHome(AppRag):
             st.header(f"Collection {self.collectionName}")
             new_collection_name = st.text_input(label="Nom de la collection",placeholder="Nom de la collection", value=self.collectionName)
         
-            colc1, colc2, colc3 = st.columns(3)
+            colc1, colc2, colc3, colc4 = st.columns(4)
             with colc1 :
                 if st.button("⚠️ Supprimer la collection", key="delete_collection") :
                     self.delete_collection(self.collectionName)
                     st.rerun()
             with colc2 :
                     
-                if st.button("💸 Nouvelle collection ...", key="collection_create"): 
+                if st.button("📓 Nouvelle collection ...", key="collection_create"): 
                     if new_collection_name == self.collectionName:
                         "le nom exites déja"
                     else:
                         collection_selectionnee = self.create_collection(name=new_collection_name)    
                         st.rerun() 
-                
-                
+            with colc4: 
+                if st.button("⚠️ Vider la collection"):
+                    self.empty_collection()
+                    st.experimental_rerun()
+                    
+                    
             with colc3:
-                if st.button("💸 Rename collection ...", key="collection_rename"): 
+                if st.button("❓ Rename collection ...", key="collection_rename"): 
                     "rename collection"
                     collection_selectionnee = self.rename_collection(name=new_collection_name)    
                     st.rerun() 

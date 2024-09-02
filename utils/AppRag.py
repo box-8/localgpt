@@ -34,7 +34,27 @@ class AppRag(BasicChat):
         else:
             return False
         
-        
+    def empty_collection(self, attr=None, value=""):
+        if self.collectionName:
+            try:
+                # Obtention de la collection
+                collection = self.client.get_collection(self.collectionName)
+                
+                if collection:
+                    # Supprimer tous les documents de la collection spécifiée
+                    
+                    if attr is not None:
+                        collection.delete(where={"collectionName": self.collectionName, attr : value })
+                    else:
+                        collection.delete(where={"collectionName": self.collectionName})
+                    st.sidebar.success(f"Tous les éléments de la collection '{self.collectionName}' ont été supprimés.")
+                else:
+                    st.error(f"La collection '{self.collectionName}' n'existe pas.")
+            except Exception as e:
+                st.error(f"Erreur lors de la suppression: {e}")
+        else:
+            st.warning("Veuillez entrer un nom de collection valide.")
+             
     def save_uploaded_doc(self, uploaded_file, file_rename=""):
         # Sauvegarder l'image téléchargée sur le disque
         with open(os.path.join(DATA_PATH, file_rename), "wb") as f:
