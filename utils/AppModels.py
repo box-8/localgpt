@@ -22,7 +22,6 @@ class AppModels(BasicSession):
     
     # build user interface to see or change the LLM in use  
     def ui_panel(self):
-        st.markdown(f"## Gestion des modèles 🍀 {st.session_state.llm_modelname}")
         
         # CACHED_LLM = []
         files = self.list_models()

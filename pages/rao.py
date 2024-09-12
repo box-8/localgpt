@@ -7,6 +7,9 @@ from utils.embeddings import DATA_PATH, EMBEDDINGS
 from utils.AppRag import AppRag
 
 
+
+
+
 class AppOfferAnalysis(AppRag):
 
     def std_uploader(self, selfDoc, filename, key):
@@ -17,23 +20,28 @@ class AppOfferAnalysis(AppRag):
         
         
         if os.path.exists(file_rename_path):
-            button = st.button(f"voir",key=file_rename)
-            if button: 
-                os.startfile(file_rename_path)
             
-            button1 = st.button(f"supprimer ",key="delete_"+file_rename)
-            if button1: 
-                os.remove(file_rename_path)
-                st.sidebar.success(f"Le document {file_rename} a été supprimée avec succès.")
-                selfDoc = None
-                st.experimental_rerun()
-                
+            colf1, colf2, colf3 = st.columns(3)
+            with colf1:
+                button = st.button(f"voir le pdf",key=file_rename)
+                if button: 
+                    os.startfile(file_rename_path)
+           
+                button1 = st.button(f"supprimer ",key="delete_"+file_rename)
+                if button1: 
+                    os.remove(file_rename_path)
+                    st.sidebar.success(f"Le document {file_rename} a été supprimée avec succès.")
+                    selfDoc = None
+                    st.experimental_rerun()
+            with colf2:
+                button2 = st.button(f"afficher chroma ",key="vecteur_"+file_rename)
+                if button2: 
+                    self.query_chroma(self.collectionName)
         else:
-            
             selfDoc = st.file_uploader(label="uploader le fichier", accept_multiple_files=False, key=key)
             if selfDoc is not None :
                 saved_path = self.save_uploaded_doc(uploaded_file=selfDoc, file_rename=file_rename )
-                self.vectoriser(file_path=saved_path, collectionName=self.collectionName)
+                self.vectorise_document(file_path=saved_path, collectionName=self.collectionName)
                 st.balloons()
                 st.experimental_rerun()
         
@@ -45,7 +53,7 @@ class AppOfferAnalysis(AppRag):
         self.Offre3 = None
         super().sidebar()
         tab1, tab2, tab3, tab4 = st.tabs(["CCTP", "Offres", "Analyse", "Options"])
-
+            
         with tab1:
             st.header(f"Cahier des charges #{self.collectionName}#")
             self.std_uploader(selfDoc=self.CCTP, filename="CCTP.pdf", key="cctp")
@@ -62,46 +70,54 @@ class AppOfferAnalysis(AppRag):
 
         with tab3:
             # Liste des fichiers du répertoire "data"
-            st.header(f"Fichiers sur le disque")
-            data_files = os.listdir(DATA_PATH)
-            data_files = [file for file in data_files if file.endswith(('.pdf', '.txt', '.docx', '.jpg'))]
-
-            # Afficher la liste des fichiers dans la sidebar
-            selected_file = st.selectbox("Choisissez un document parmi les fichiers :", data_files)
-
-            # Charger et afficher l'image sélectionnée depuis le répertoire "images"
-            if selected_file:
-                selected_data_path = os.path.join(DATA_PATH, selected_file)
-                if selected_file.endswith('.jpg'):
-                    st.image(selected_data_path, caption=selected_file, use_column_width=True)
-
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                button1 = st.button('Effacer')
-
-            with col2:
-                button2 = st.button('Ouvrir')
-
-            with col3:
-                button3 = st.button('Vectoriser')
-
+            st.header(f"Analyse des offres")
+            button1 = st.button('Analyser')
             if button1:
-                if selected_file:
-                    os.remove(selected_data_path)
-                    st.sidebar.success(f"Le document {selected_file} a été supprimée avec succès.")
-            if button2:
-                if selected_file:
-                    os.startfile(selected_data_path)
-            if button3:
-                if selected_file:
-                    self.vectoriser(file_path=selected_data_path, collectionName=self.collectionName)
+                st.toast(f"L'analyse est en cours ...")
+            st.session_state['container'] = st.container()
+            st.session_state['container'].write("default ...")
+                
         with tab4:
             models = AppModels()
             models.ui_panel()
+        
+        if 'container' not in st.session_state:
+            st.session_state['container'] = "..."
+        
+        collection = self.client.get_or_create_collection(name=self.collectionName)
+        df = pd.DataFrame.from_dict(collection.get())
+        # manque selection sur docname
+        write = st.dataframe(df, width=1400)
+        st.container().write(write)
+        
+    def query_chroma(self,filename=""): 
+        
+        """
+        Fonction pour récupérer et filtrer les documents de la collection Chroma
+        selon la metadata file_name.
+        """
+        # Récupération de la collection depuis Chroma
+        collection = self.client.get_or_create_collection(name=self.collectionName)
+        
+        # Récupérer toutes les données de la collection
+        data = collection.get()
+        
+        # Extraire les métadonnées des documents
+        metadatas = data['metadatas']
+        
+        # Filtrer les documents par filename
+        filtered_data = [meta for meta in metadatas if meta.get('filename') == filename]
+        
+        # Créer un DataFrame avec les métadonnées filtrées
+        df = pd.DataFrame(filtered_data)
+        
+        return df
+        
 
-    def delete_document(collectionName, documentName, client):
-        collection = client.get_or_create_collection(name=collectionName)
+        
+
+    def delete_document(self, collectionName, documentName, client):
+        collection = self.client.get_or_create_collection(name=collectionName)
         df = pd.DataFrame.from_dict(collection.get())
         filtered_ids = set()
         for index, row in df.iterrows():

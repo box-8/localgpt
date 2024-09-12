@@ -6,9 +6,12 @@ import pandas as pd
 from langchain.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-
 from utils.embeddings import DATA_PATH, EMBEDDINGS
 from utils.BasicChat import BasicChat
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders.pdf import PyMuPDFLoader 
+
+
 
 
 class AppRag(BasicChat):
@@ -21,8 +24,42 @@ class AppRag(BasicChat):
     def init_collections(self):
         self.collections = self.client.list_collections()  # obtenir la liste des collections
         self.noms_collections = [col.name for col in self.collections] # obtenir les noms des collections
-        self.collectionName = self.noms_collections[0]
-    
+        if not self.noms_collections:  # Vérifie si la liste n'est pas vide
+            self.collectionName = ""
+        else:
+            self.collectionName = self.noms_collections[0]
+        
+    # vectorise un document
+    def vectorise_document(self, file_path, collectionName="langchain"):
+        loader = PyMuPDFLoader(file_path=file_path)
+        documents = loader.load()
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+            #add_start_index=True,
+        )
+        
+        chunks = text_splitter.split_documents(documents)
+        st.toast(f"Découpage du document {os.path.basename(file_path)} dans la collection {collectionName}")
+        # Ajouter le nom de la collection aux métadonnées de chaque chunk
+        for chunk in chunks:
+            self.set_attr(chunk=chunk, attrName="collectionName",attrValue=collectionName)
+            self.set_attr(chunk=chunk, attrName="filename",attrValue=os.path.basename(file_path))
+            # if hasattr(chunk, 'metadata'):
+            #     chunk.metadata['collectionName'] = collectionName
+            # else:
+            #     chunk.metadata = {'collectionName': collectionName}
+
+            os.path.basename(file_path)
+        """
+        Vectorisation en cours
+        """
+        self.chroma_db.add_documents(documents=chunks)
+        st.toast(f"Le document a été vectorisé avec succès à l'emplacement : {file_path}")
+        st.balloons()
+        #st.experimental_rerun()
+        
     def is_document_vectorized(self, file_name):
         # Fonction pour vérifier si le document est déjà dans la collection
         collection = self.client.get_collection(self.collectionName)
@@ -84,7 +121,9 @@ class AppRag(BasicChat):
             st.session_state.selected_docs = []
 
         self.selected_docs = st.sidebar.multiselect("Choisissez les documents de la collection", self.docs_in_collection, key="selected_docs", default=st.session_state.selected_docs)
-    
+
+        if st.sidebar.button("🖐️ Rafraichir l'écran"):
+            st.rerun()   
     def documents_communs(self, tab1, tab2):
         set1 = set(tab1)
         set2 = set(tab2)

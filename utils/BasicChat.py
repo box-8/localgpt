@@ -1,24 +1,20 @@
 import os
+import random
 import streamlit as st
 import time
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders.pdf import PyMuPDFLoader 
-
-from utils.embeddings import EMBEDDINGS
 from utils.BasicSession import BasicSession
 from utils.BasicLLM import BasicLLM
 
-
+st.set_page_config("box-8", "🗃️", layout='wide')
 class BasicChat(BasicSession, BasicLLM):
-    def _init(self, title="", icon=""):
+    def _init(self, chat_key="", icon=""):
         self.session_init()
-        self.title = title
+        self.chat_key = chat_key
         self.icon = icon
-        st.set_page_config(page_title=self.title, page_icon=self.icon, layout='wide')
-        st.title(self.title + " "+ self.icon)
+        
         
         self.llmLocal(st.session_state.llm_port) 
     
@@ -31,36 +27,7 @@ class BasicChat(BasicSession, BasicLLM):
         else:
             chunk.metadata = {attrName: attrValue}
             
-    # vectorise un document
-    def vectoriser(self, file_path, collectionName="langchain"):
-        loader = PyMuPDFLoader(file_path=file_path)
-        documents = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
-            length_function=len,
-            #add_start_index=True,
-        )
-        chunks = text_splitter.split_documents(documents)
-        print(collectionName)
-        # Ajouter le nom de la collection aux métadonnées de chaque chunk
-        for chunk in chunks:
-            self.set_attr(chunk=chunk, attrName="collectionName",attrValue=collectionName)
-            self.set_attr(chunk=chunk, attrName="filename",attrValue=os.path.basename(file_path)
-)
-            # if hasattr(chunk, 'metadata'):
-            #     chunk.metadata['collectionName'] = collectionName
-            # else:
-            #     chunk.metadata = {'collectionName': collectionName}
-
-            os.path.basename(file_path)
-        """
-        Vectorisation en cours
-        """
-        self.chroma_db.add_documents(documents=chunks)
-        st.sidebar.warning(f"Le document a été vectorisé avec succès à l'emplacement : {file_path}")
-        st.balloons()
-        st.experimental_rerun()
+    
            
     def ui_context(self):
         opt_system_context = self.container_options.text_area("Contexte du Système :",key="opt_system_context", value=st.session_state.opt_system_context)
@@ -139,7 +106,7 @@ class BasicChat(BasicSession, BasicLLM):
                     st.write(message.content)
 
         # user input
-        user_query = st.chat_input("Type your message here...")
+        user_query = st.chat_input("Type your message here...", key=self.chat_key)
         if user_query is not None and user_query != "":
             st.session_state.history.append(HumanMessage(content=user_query))
             with st.chat_message("Human"):

@@ -3,6 +3,8 @@ import base64
 from utils.BasicChat import BasicChat
 from openai import OpenAI
 
+
+
 class AppVision(BasicChat):
   
     def __init__(self) -> None:
@@ -61,10 +63,9 @@ class AppVision(BasicChat):
     
     
     def completion(self, query=""):
-        print(query)
-        return self.llm.chat.completions.create(
-            model=self.llm_model_name, # not used
-            messages=[
+        
+        
+        messages = [
                 {
                 "role": "system",
                 "content": self.context,
@@ -81,7 +82,11 @@ class AppVision(BasicChat):
                     },
                 ],
                 }
-            ],
+            ]
+        print(messages)
+        return self.llm.chat.completions.create(
+            model=self.llm_model_name, # not used
+            messages=messages,
             max_tokens=1000,
             stream=True,
             )
@@ -97,7 +102,6 @@ class AppVision(BasicChat):
             
             for chunk in completion:
                 if chunk.choices[0].delta.content:
-                    print(f"piece of response {chunk}")
                     yield chunk
         except Exception as e:
             return f"Erreur lors de l'envoi de la requête: {e}"
